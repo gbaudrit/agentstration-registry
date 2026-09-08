@@ -1,0 +1,13 @@
+apiVersion: agentstration.io/v1
+kind: BootstrapCatalog
+metadata:
+  name: official-bootstrap-samples
+definition:
+  displayName: Agentstration Bootstrap samples
+  description: Official profiles for discovering and demonstrating Agentstration.
+  entries:
+    - name: solution-discovery
+      defaultLocale: fr-FR
+      variants:
+        - locale: fr-FR
+          path: profiles/solution-discovery/fr-FR
