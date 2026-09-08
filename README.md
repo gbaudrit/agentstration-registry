@@ -67,6 +67,11 @@ complete, independently applicable profile; variants are selected explicitly
 and are never merged. A future language-neutral variant uses `neutral` rather
 than implying that it is translated into every language.
 
+The catalog entry remains language-neutral. Its selected variant's
+`BootstrapProfile` owns localized display text and resource content. Variants
+of one logical entry must retain the same profile name, target scope, and
+binding declarations.
+
 The French `solution-discovery` variant is initially synchronized from
 `deploy/bootstrap/profiles/solution-discovery` in the Agentstration repository.
 It targets one Workspace and requires the administrator to bind `agent-model`
@@ -87,5 +92,5 @@ python scripts/validate.py
 ```
 
 The validator parses every YAML document, validates the Source and catalog
-envelopes, enforces descendant-only paths, and checks every referenced Bootstrap
-Profile.
+envelopes, enforces descendant-only paths and canonical locale identifiers, and
+checks every referenced Bootstrap Profile and its cross-locale invariants.

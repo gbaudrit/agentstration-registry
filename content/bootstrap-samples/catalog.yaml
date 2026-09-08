@@ -7,8 +7,6 @@ definition:
   description: Official profiles for discovering and demonstrating Agentstration.
   entries:
     - name: solution-discovery
-      displayName: Discover Agentstration
-      description: Create a handoff team and a conversational experience for discovering Agentstration.
       defaultLocale: fr-FR
       variants:
         - locale: fr-FR

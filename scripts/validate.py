@@ -16,6 +16,17 @@ SOURCE_PATH = ROOT / "sources/agentstration/bootstrap-samples/source.yaml"
 GIT_SOURCE_CHANNEL_SCHEMA_DIGEST = (
     "sha256:1d6b1c53300ea531209a60ad56f50de209d4ae06bfc5c350de2d84bfe6842bf5"
 )
+CANONICAL_BCP47_LOCALE = re.compile(
+    r"^(?:"
+    r"(?:[a-z]{2,3}(?:-[a-z]{3}){0,3}|[a-z]{4}|[a-z]{5,8})"
+    r"(?:-[A-Z][a-z]{3})?"
+    r"(?:-(?:[A-Z]{2}|[0-9]{3}))?"
+    r"(?:-(?:[a-z0-9]{5,8}|[0-9][a-z0-9]{3}))*"
+    r"(?:-[0-9a-wy-z](?:-[a-z0-9]{2,8})+)*"
+    r"(?:-x(?:-[a-z0-9]{1,8})+)?"
+    r"|x(?:-[a-z0-9]{1,8})+"
+    r")$"
+)
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -97,6 +108,34 @@ def descendant_path(value: Any, label: str) -> PurePosixPath:
     if invalid:
         fail(f"{label} must be a normalized relative descendant path")
     return PurePosixPath(path)
+
+
+def is_canonical_locale(value: str) -> bool:
+    if value == "neutral":
+        return True
+    if value.startswith("neutral-"):
+        return False
+    return CANONICAL_BCP47_LOCALE.fullmatch(value) is not None
+
+
+def freeze_contract(value: Any) -> Any:
+    if isinstance(value, dict):
+        return tuple(sorted((key, freeze_contract(item)) for key, item in value.items()))
+    if isinstance(value, list):
+        return tuple(freeze_contract(item) for item in value)
+    return value
+
+
+def bootstrap_profile_contract(descriptor: dict[str, Any], label: str) -> tuple[Any, ...]:
+    metadata = require_dict(descriptor.get("metadata"), f"{label}.metadata")
+    definition = require_dict(descriptor.get("definition"), f"{label}.definition")
+    bindings = require_list(definition.get("bindings", []), f"{label}.definition.bindings")
+    frozen_bindings = tuple(sorted((freeze_contract(binding) for binding in bindings), key=repr))
+    return (
+        require_string(metadata.get("name"), f"{label}.metadata.name"),
+        require_string(definition.get("targetScope"), f"{label}.definition.targetScope"),
+        frozen_bindings,
+    )
 
 
 def envelope(
@@ -221,6 +260,7 @@ def validate_registry() -> tuple[int, int, int]:
                 if not variants:
                     fail(f"BootstrapCatalog entry {entry_name} must contain at least one variant")
                 locales: list[str] = []
+                shared_profile_contract: tuple[Any, ...] | None = None
                 for variant_index, variant_value in enumerate(variants):
                     variant = require_dict(
                         variant_value,
@@ -230,8 +270,8 @@ def validate_registry() -> tuple[int, int, int]:
                         variant.get("locale"),
                         f"BootstrapCatalog entry {entry_name} variants[{variant_index}].locale",
                     )
-                    if locale != "neutral" and re.fullmatch(r"[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*", locale) is None:
-                        fail(f"BootstrapCatalog entry {entry_name} has an invalid BCP 47 locale: {locale}")
+                    if not is_canonical_locale(locale):
+                        fail(f"BootstrapCatalog entry {entry_name} has a non-canonical BCP 47 locale: {locale}")
                     locales.append(locale)
                     entry_relative = descendant_path(
                         variant.get("path"),
@@ -260,6 +300,14 @@ def validate_registry() -> tuple[int, int, int]:
                         fail(f"Catalog entry {entry_name} and BootstrapProfile name differ")
                     if descriptor["definition"].get("targetScope") != "workspace":
                         fail("Published Bootstrap samples must declare targetScope: workspace")
+                    variant_contract = bootstrap_profile_contract(descriptor, relative(descriptor_path))
+                    if shared_profile_contract is None:
+                        shared_profile_contract = variant_contract
+                    elif variant_contract != shared_profile_contract:
+                        fail(
+                            f"BootstrapCatalog entry {entry_name} variants must declare the same "
+                            "profile name, target scope, and bindings"
+                        )
 
                     resources = sorted(
                         path
