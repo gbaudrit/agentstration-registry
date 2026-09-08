@@ -1,0 +1,33 @@
+apiVersion: agentstration.io/v1
+kind: SourceVersion
+metadata:
+  name: bootstrap-samples
+definition:
+  version: "1"
+  displayName: Agentstration Bootstrap samples
+  description: Official reusable Bootstrap Profiles demonstrating Agentstration capabilities.
+  publisher:
+    name: agentstration
+    displayName: Agentstration
+    url: https://www.agentstration.io
+  bindings:
+    - name: git-distribution
+      targetKind: sourceProvider
+  channels:
+    - name: latest
+      compatibility:
+        agentstration:
+          minVersion: 0.2.0-alpha.1
+      provider:
+        binding: git-distribution
+      configuration:
+        optionSet: io.agentstration.git/source-channel
+        version: 1.0.0
+        schemaDigest: sha256:1d6b1c53300ea531209a60ad56f50de209d4ae06bfc5c350de2d84bfe6842bf5
+        values:
+          repository: https://github.com/gbaudrit/agentstration-registry.git
+          ref: refs/heads/main
+          rootPath: content/bootstrap-samples
+  catalogs:
+    - kind: BootstrapCatalog
+      path: catalog.yaml
