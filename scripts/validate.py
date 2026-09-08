@@ -210,32 +210,71 @@ def validate_registry() -> tuple[int, int, int]:
                 entry = require_dict(entry_value, f"BootstrapCatalog.definition.entries[{entry_index}]")
                 entry_name = require_string(entry.get("name"), f"BootstrapCatalog.definition.entries[{entry_index}].name")
                 entry_names.append(entry_name)
-                entry_relative = descendant_path(entry.get("path"), f"BootstrapCatalog entry {entry_name} path")
-                profile_root = resolve_descendant(catalog_path.parent, entry_relative, f"BootstrapCatalog entry {entry_name}")
-                if not profile_root.is_dir():
-                    fail(f"Bootstrap profile is not a directory: {entry_relative}")
-                if not profile_root.is_relative_to(content_root.resolve(strict=True)):
-                    fail(f"Bootstrap profile escapes the Channel root: {entry_relative}")
-
-                descriptor_path = profile_root / "profile.yaml"
-                if not descriptor_path.is_file():
-                    fail(f"Bootstrap profile {entry_name} has no profile.yaml")
-                descriptor = envelope(load_yaml(descriptor_path), descriptor_path, "BootstrapProfile")
-                if descriptor["metadata"]["name"] != entry_name:
-                    fail(f"Catalog entry {entry_name} and BootstrapProfile name differ")
-                if descriptor["definition"].get("targetScope") != "workspace":
-                    fail("Published Bootstrap samples must declare targetScope: workspace")
-
-                resources = sorted(
-                    path
-                    for pattern in ("*.yaml", "*.yml")
-                    for path in profile_root.glob(pattern)
-                    if path.name != "profile.yaml"
+                default_locale = require_string(
+                    entry.get("defaultLocale"),
+                    f"BootstrapCatalog entry {entry_name} defaultLocale",
                 )
-                if not resources:
-                    fail(f"Bootstrap profile {entry_name} contains no resources")
-                for resource in resources:
-                    envelope(load_yaml(resource), resource)
+                variants = require_list(
+                    entry.get("variants"),
+                    f"BootstrapCatalog entry {entry_name} variants",
+                )
+                if not variants:
+                    fail(f"BootstrapCatalog entry {entry_name} must contain at least one variant")
+                locales: list[str] = []
+                for variant_index, variant_value in enumerate(variants):
+                    variant = require_dict(
+                        variant_value,
+                        f"BootstrapCatalog entry {entry_name} variants[{variant_index}]",
+                    )
+                    locale = require_string(
+                        variant.get("locale"),
+                        f"BootstrapCatalog entry {entry_name} variants[{variant_index}].locale",
+                    )
+                    if locale != "neutral" and re.fullmatch(r"[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*", locale) is None:
+                        fail(f"BootstrapCatalog entry {entry_name} has an invalid BCP 47 locale: {locale}")
+                    locales.append(locale)
+                    entry_relative = descendant_path(
+                        variant.get("path"),
+                        f"BootstrapCatalog entry {entry_name} variant {locale} path",
+                    )
+                    expected_path = PurePosixPath("profiles") / entry_name / locale
+                    if entry_relative != expected_path:
+                        fail(
+                            f"BootstrapCatalog entry {entry_name} variant {locale} must use path {expected_path}"
+                        )
+                    profile_root = resolve_descendant(
+                        catalog_path.parent,
+                        entry_relative,
+                        f"BootstrapCatalog entry {entry_name} variant {locale}",
+                    )
+                    if not profile_root.is_dir():
+                        fail(f"Bootstrap profile variant is not a directory: {entry_relative}")
+                    if not profile_root.is_relative_to(content_root.resolve(strict=True)):
+                        fail(f"Bootstrap profile variant escapes the Channel root: {entry_relative}")
+
+                    descriptor_path = profile_root / "profile.yaml"
+                    if not descriptor_path.is_file():
+                        fail(f"Bootstrap profile {entry_name} variant {locale} has no profile.yaml")
+                    descriptor = envelope(load_yaml(descriptor_path), descriptor_path, "BootstrapProfile")
+                    if descriptor["metadata"]["name"] != entry_name:
+                        fail(f"Catalog entry {entry_name} and BootstrapProfile name differ")
+                    if descriptor["definition"].get("targetScope") != "workspace":
+                        fail("Published Bootstrap samples must declare targetScope: workspace")
+
+                    resources = sorted(
+                        path
+                        for pattern in ("*.yaml", "*.yml")
+                        for path in profile_root.glob(pattern)
+                        if path.name != "profile.yaml"
+                    )
+                    if not resources:
+                        fail(f"Bootstrap profile {entry_name} variant {locale} contains no resources")
+                    for resource in resources:
+                        envelope(load_yaml(resource), resource)
+                if len(set(locales)) != len(locales):
+                    fail(f"BootstrapCatalog entry {entry_name} variant locales must be unique")
+                if default_locale not in locales:
+                    fail(f"BootstrapCatalog entry {entry_name} defaultLocale has no matching variant")
             if len(set(entry_names)) != len(entry_names):
                 fail("BootstrapCatalog entry names must be unique")
 

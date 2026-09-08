@@ -36,6 +36,7 @@ content/
     catalog.yaml
     profiles/
       solution-discovery/
+        fr-FR/
 scripts/
   validate.py
 ```
@@ -55,7 +56,18 @@ path traversal.
 
 ## Bootstrap samples
 
-`solution-discovery` is initially synchronized from
+The catalog groups language variants beneath the logical Bootstrap identity:
+
+```text
+profiles/<bootstrap-name>/<locale>/
+```
+
+Locales use BCP 47 identifiers such as `fr-FR` and `en-US`. Each variant is a
+complete, independently applicable profile; variants are selected explicitly
+and are never merged. A future language-neutral variant uses `neutral` rather
+than implying that it is translated into every language.
+
+The French `solution-discovery` variant is initially synchronized from
 `deploy/bootstrap/profiles/solution-discovery` in the Agentstration repository.
 It targets one Workspace and requires the administrator to bind `agent-model`
 to a compatible Model Profile before preview and application.

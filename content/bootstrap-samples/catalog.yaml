@@ -9,4 +9,7 @@ definition:
     - name: solution-discovery
       displayName: Discover Agentstration
       description: Create a handoff team and a conversational experience for discovering Agentstration.
-      path: profiles/solution-discovery
+      defaultLocale: fr-FR
+      variants:
+        - locale: fr-FR
+          path: profiles/solution-discovery/fr-FR
