@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "agentstration.sourceregistry.tool": {
+      "version": "0.2.0-alpha.1.dev.20260909233029.34417204856.1",
+      "commands": [
+        "agentstration-source-registry"
+      ],
+      "rollForward": false
+    }
+  }
+}

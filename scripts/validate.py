@@ -12,7 +12,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parent.parent
-SOURCE_PATH = ROOT / "sources/agentstration/bootstrap-samples/source.yaml"
+SOURCE_PATH = ROOT / "registry/v1/sources/agentstration/bootstrap-samples/1/source.yaml"
 GIT_SOURCE_CHANNEL_SCHEMA_DIGEST = (
     "sha256:1d6b1c53300ea531209a60ad56f50de209d4ae06bfc5c350de2d84bfe6842bf5"
 )
