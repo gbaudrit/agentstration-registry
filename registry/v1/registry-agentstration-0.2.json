@@ -1,0 +1,29 @@
+{
+  "apiVersion": "agentstration.io/v1",
+  "kind": "SourceRegistry",
+  "metadata": {
+    "name": "agentstration-0-2"
+  },
+  "definition": {
+    "publishers": [
+      {
+        "name": "agentstration",
+        "status": "Official"
+      }
+    ],
+    "sources": [
+      {
+        "publisher": "agentstration",
+        "name": "bootstrap-samples",
+        "latest": "1",
+        "versions": [
+          {
+            "version": "1",
+            "manifestUrl": "sources/agentstration/bootstrap-samples/1/source.yaml",
+            "manifestDigest": "sha256:4e30ca8fae13f0aaefaaa11c154fbaac45a6a5b82244c8cfa09f65063c045d8a"
+          }
+        ]
+      }
+    ]
+  }
+}

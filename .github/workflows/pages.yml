@@ -1,0 +1,68 @@
+name: Publish registry
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - name: Restore pinned registry tool
+        run: dotnet tool restore
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install validator dependencies
+        run: python -m pip install PyYAML==6.0.3
+      - name: Validate Bootstrap content
+        run: python scripts/validate.py
+      - name: Test Bootstrap validation rules
+        run: python -m unittest scripts/test_validate.py
+      - name: Validate registry
+        run: >-
+          dotnet tool run agentstration-source-registry --
+          registry validate registry/v1/index.yaml
+          --publication-root registry/v1
+          --base-uri https://registry.agentstration.io/v1/
+      - name: Assemble Pages artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts/site/v1 -Force | Out-Null
+          Copy-Item -LiteralPath site/.nojekyll -Destination artifacts/site/.nojekyll
+          Copy-Item -LiteralPath site/index.html -Destination artifacts/site/index.html
+          dotnet tool run agentstration-source-registry -- registry build registry/v1/index.yaml --publication-root registry/v1 --base-uri https://registry.agentstration.io/v1/ --output artifacts/site/v1
+      - name: Verify generated registry
+        run: python scripts/verify_publication.py artifacts/site/v1
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: artifacts/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

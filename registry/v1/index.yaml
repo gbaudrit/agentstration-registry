@@ -1,0 +1,14 @@
+apiVersion: agentstration.io/v1
+kind: SourceRegistryIndex
+metadata:
+  name: agentstration
+  displayName: Agentstration Registry
+definition:
+  catalogs:
+    - name: agentstration-0-2
+      compatibility:
+        agentstration:
+          minVersion: 0.2.0-alpha.1
+          maxVersionExclusive: 0.3.0
+      registryUrl: registry-agentstration-0.2.json
+      registryDigest: sha256:1d1d856f6a5b3463e8e9f2ff157533b4eb1abdb29e15fa6f18f77b4b34e12670
